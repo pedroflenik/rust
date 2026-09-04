@@ -46,8 +46,23 @@ impl <T>Lista<T>{
     }
 
 
-    fn inserir_ordenado(&mut self, e:T){
-        
+    fn inserir_ordenado(&mut self, e:T) where T: PartialOrd{
+        if self.cab.is_none() || self.cab.as_ref().unwrap().elem >= e{
+            let no_cabeca = self.cab.take();
+            self.cab = Some(Box::new(No {elem:e, prox:no_cabeca}));
+            return;
+        }
+
+        let mut atual = &mut self.cab;
+
+        while atual.as_ref().unwrap().prox.is_some() 
+        && atual.as_ref().unwrap().prox.as_ref().unwrap().elem < e 
+        {
+            atual = &mut atual.as_mut().unwrap().prox;
+        }
+
+        let no_seguinte = atual.as_mut().unwrap().prox.take();
+        atual.as_mut().unwrap().prox = Some(Box::new(No { elem: e, prox: no_seguinte }));
     }
 
 
@@ -60,10 +75,12 @@ fn main() {
    
     let mut l:Lista<u32> = Lista::new();
 
-    l.inserir_cauda(1);
-    l.inserir_cauda(2);
-    l.inserir_cauda(5);
-    l.inserir_cauda(32);
+    l.inserir_ordenado(1);
+    l.inserir_ordenado(2);
+    l.inserir_ordenado(5);
+    l.inserir_ordenado(3);
+    l.inserir_ordenado(15);
+    l.inserir_ordenado(10);
 
     println!("{l:?}");
 
