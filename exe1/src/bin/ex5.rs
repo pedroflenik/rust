@@ -3,12 +3,10 @@
 fn eh_palindromo(s: String) -> bool{
     let mut pilha: Vec<char> = Vec::new();
     
-    
     for c in s.chars(){
         pilha.push(c);
     }
     
-        
     
     for c in s.chars(){
         if c != pilha.pop().expect("Pilha == none"){
