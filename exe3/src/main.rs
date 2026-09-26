@@ -43,13 +43,26 @@ impl<T: Ord + Copy> Arvore<T> {
         *atual =Some(Box::new(No { elem, esq: None, dir: None }))
     }
 
-    fn remover_maior(&self){
+    fn remover_maior(&mut self){
+        if self.raiz.is_none(){
+            panic!("Árvore vazia") // TODO: lembrar de tratar erro com Result
+        }else{
+            let mut atual = &mut self.raiz;
+            while !atual.as_ref().unwrap().dir.is_none(){
+                atual = &mut atual.as_mut().unwrap().dir;
+            }
+            let no_esq = atual.as_mut().unwrap().esq.take();
 
+            *atual = no_esq;
+        }
+           
     }
 
     fn remover_elemento(&self, elem: T){
-
+        
     }
+
+
 }
 fn main(){
 
