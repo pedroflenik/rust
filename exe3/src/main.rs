@@ -2,17 +2,17 @@
 Implemente em Rust métodos que:
 
 
-• Insira um elemento (obedecendo a organização de árvore binária de pesquisa, elementos repetidos não devem ser inseridos);
-• Retorne e remova o maior elemento (se houver);
-• Remova um elemento passado como parâmetro;
-• Forneça também uma implementações para a trait Display;
+• Insira um elemento (obedecendo a organização de árvore binária de pesquisa, elementos repetidos não devem ser inseridos); X
+• Retorne e remova o maior elemento (se houver); X
+• Remova um elemento passado como parâmetro; X
+• Forneça também uma implementações para a trait Display; X
 • Forneça um iterador (trait Iterator) que percorra a árvore em ordem sem consumi-la
 
 
 */
 
-use core::panic;
-use std::cell::Ref;
+use core::{fmt, panic};
+use std::{cell::Ref, fmt::write};
 
 pub struct Arvore<T:Ord + Copy> {
     raiz : Option<Box<No<T>>>
@@ -24,6 +24,31 @@ pub struct No <T:Ord + Copy> {
     dir: Option<Box<No<T>>>,
 }
 
+impl<T: Ord + Copy + fmt::Display> fmt::Display for Arvore<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match &self.raiz{
+            None => write!(f,"ÁRVORE VAZIA"),
+            Some(no) => write!(f, "[ {} ]",no)
+        }
+    }
+}
+
+impl<T: Ord + Copy + fmt::Display> fmt::Display for No<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        
+        write!(f, " {} ", self.elem);
+
+        if let Some(ref esq) = self.esq {
+            write!(f, "[ E:{} ] ", esq); 
+        }
+        
+        if let Some(ref dir) = self.dir {
+            write!(f, " [ D:{} ]", dir);
+        }
+        
+        Ok(())
+    }
+}
 
 impl<T: Ord + Copy> Arvore<T> {    
     fn inserir_elem(&mut self, elem: T){
@@ -71,7 +96,7 @@ impl<T: Ord + Copy> Arvore<T> {
                     atual = &mut atual.as_mut().unwrap().esq;
                 }
             }
-            if(atual.is_none()){
+            if atual.is_none() {
                 panic!("Elemento não existe na árvore")
             }else{
                 /*
@@ -109,8 +134,29 @@ impl<T: Ord + Copy> Arvore<T> {
         }
     }
 
-
 }
-fn main(){
 
+
+
+fn main(){
+    let mut minha_arvore: Arvore<i32> = Arvore { raiz: None };
+
+    minha_arvore.inserir_elem(10);
+    minha_arvore.inserir_elem(5);
+    minha_arvore.inserir_elem(15);
+    minha_arvore.inserir_elem(3);
+    minha_arvore.inserir_elem(7);
+
+    println!("Árvore inicial:");
+    println!("{}", minha_arvore);
+    println!();
+
+    println!("tirando o elemento 5");
+    minha_arvore.remover_elemento(5);
+    println!("{}", minha_arvore);
+    println!();
+
+    println!("tirando o maior");
+    minha_arvore.remover_maior();
+    println!("{}", minha_arvore);
 }
