@@ -1,14 +1,10 @@
 /*
 Implemente em Rust métodos que:
-
-
 • Insira um elemento (obedecendo a organização de árvore binária de pesquisa, elementos repetidos não devem ser inseridos); X
 • Retorne e remova o maior elemento (se houver); X
 • Remova um elemento passado como parâmetro; X
 • Forneça também uma implementações para a trait Display; X
 • Forneça um iterador (trait Iterator) que percorra a árvore em ordem sem consumi-la
-
-
 */
 
 use core::{fmt, panic};
@@ -23,6 +19,35 @@ pub struct No <T:Ord + Copy> {
     esq: Option<Box<No<T>>>,
     dir: Option<Box<No<T>>>,
 }
+
+pub struct ArvoreIte<'a, T>
+where
+    T: Ord + Copy,
+{
+    pilha: Vec<&'a No<T>>,
+}
+impl<'a, T: Ord + Copy> ArvoreIte<'a, T> {
+    fn empilha_toda_esquerda(&mut self, mut atual: Option<&'a No<T>>) {
+        while atual.is_some() {
+            let n = atual.unwrap();
+            self.pilha.push(n);
+            atual = n.esq.as_deref();
+        }
+    }
+}
+impl<'a, T: Ord + Copy> Iterator for ArvoreIte<'a, T> {
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if let Some(no) = self.pilha.pop() {
+            self.empilha_toda_esquerda(no.dir.as_deref());
+            Some(&no.elem)
+        } else {
+            None
+        }
+    }
+}
+
 
 impl<T: Ord + Copy + fmt::Display> fmt::Display for Arvore<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -51,6 +76,13 @@ impl<T: Ord + Copy + fmt::Display> fmt::Display for No<T> {
 }
 
 impl<T: Ord + Copy> Arvore<T> {    
+
+    pub fn iter(&self) -> ArvoreIte<'_, T> {
+        let mut iter = ArvoreIte { pilha: Vec::new() };
+        iter.empilha_toda_esquerda(self.raiz.as_deref());
+        iter
+    }
+
     fn inserir_elem(&mut self, elem: T){
         let mut atual = &mut self.raiz;
 
@@ -159,4 +191,17 @@ fn main(){
     println!("tirando o maior");
     minha_arvore.remover_maior();
     println!("{}", minha_arvore);
+
+
+    println!("Testando iterador:");
+    let iterr = minha_arvore.iter();
+    for valor in iterr {
+        print!("{} ", valor);
+    }
+
+    println!();
+    println!();
+
+
+
 }
