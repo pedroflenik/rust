@@ -8,7 +8,6 @@ Implemente em Rust métodos que:
 */
 
 use core::{fmt, panic};
-use std::{cell::Ref, fmt::write};
 
 pub struct Arvore<T:Ord + Copy> {
     raiz : Option<Box<No<T>>>
@@ -171,6 +170,7 @@ impl<T: Ord + Copy> Arvore<T> {
 
 
 fn main(){
+    // testes
     let mut minha_arvore: Arvore<i32> = Arvore { raiz: None };
 
     minha_arvore.inserir_elem(10);
@@ -201,7 +201,5 @@ fn main(){
 
     println!();
     println!();
-
-
 
 }
