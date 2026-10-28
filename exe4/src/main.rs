@@ -37,6 +37,24 @@ fn leitura_arquivo_normal(nome_arquivo: &str) -> Result<String,io::Error>{
 }
 
 
+fn frequencia(string_arquivo: &str) -> Result<HashMap<char, u32>, String>{
+    let mut mapa_frequencia: HashMap<char,u32> = HashMap::new();
+
+    for c in string_arquivo.chars(){
+        match mapa_frequencia.get(&c){
+            None => {
+                mapa_frequencia.insert(c, 1);
+            }
+            Some(k) =>{
+                mapa_frequencia.insert(c, k+1);
+            }
+        }
+    }
+
+
+    Ok(mapa_frequencia)
+}
+
 fn compactar(nome_arquivo: &str){
     println!("Compactando arquivo: {}", nome_arquivo); 
 
@@ -50,6 +68,7 @@ fn compactar(nome_arquivo: &str){
 
 
 }
+
 
 fn main() {
 
