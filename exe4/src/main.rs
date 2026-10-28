@@ -39,6 +39,10 @@ fn leitura_arquivo_normal(nome_arquivo: &str) -> Result<String,io::Error>{
 
 fn frequencia(string_arquivo: &str) -> Result<HashMap<char, u32>, String>{
     let mut mapa_frequencia: HashMap<char,u32> = HashMap::new();
+    
+    if string_arquivo.is_empty() {
+        return Err(String::from("A string está vazia!"));
+    }
 
     for c in string_arquivo.chars(){
         match mapa_frequencia.get(&c){
