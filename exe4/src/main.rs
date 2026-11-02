@@ -19,7 +19,7 @@ use std::fs::{self, File};
 use std::collections::HashMap;
 use std::hash::Hash;
 use std::io::{self, Read};
-
+use std::collections::VecDeque;
 enum Huffman {
     Leaf {c:char, freq:u32},
     Node {freq:u32,
@@ -27,9 +27,69 @@ enum Huffman {
     right:Box<Huffman>}
 }
 
+impl Huffman {
+    fn freq(&self) -> u32 {
+        match self {
+            Huffman::Leaf { freq, .. } => *freq,
+            Huffman::Node { freq, .. } => *freq,
+        }
+    }
+}
 
+fn pegar_proximo_menor(fila_folhas: &mut VecDeque<Box<Huffman>>,fila_pais: &mut VecDeque<Box<Huffman>>,) -> Box<Huffman> {
+    match (fila_folhas.front(), fila_pais.front()) {
+        (Some(n1), Some(n2)) => {
+            if n1.freq() <= n2.freq() {
+                fila_folhas.pop_front().unwrap()
+            } else {
+                fila_pais.pop_front().unwrap()
+            }
+        }
+        (Some(_), None) => fila_folhas.pop_front().unwrap(),
+        (None, Some(_)) => fila_pais.pop_front().unwrap(),
+        (None, None) => panic!("erro"),
+    }
+}
+
+fn criar_arvore(frequencia: &HashMap<char, u32>) -> Option<Box<Huffman>> {
+    if frequencia.is_empty() {
+        panic!("Erro frequencia vazio");
+    }
+
+    let mut folhas: Vec<Box<Huffman>> = frequencia
+        .iter()
+        .map(|(&c, &freq)| Box::new(Huffman::Leaf { c, freq }))
+        .collect();
+
+    folhas.sort_by(|a, b| a.freq().cmp(&b.freq()));
+
+    let mut fila_folhas = VecDeque::from(folhas);
+    let mut fila_pais: VecDeque<Box<Huffman>> = VecDeque::new();
+
+    while fila_folhas.len() + fila_pais.len() > 1 {
+        let esq = pegar_proximo_menor(&mut fila_folhas, &mut fila_pais);
+        let dir = pegar_proximo_menor(&mut fila_folhas, &mut fila_pais);
+
+        let soma = esq.freq() + dir.freq();
+
+        let pai = Box::new(Huffman::Node {
+            freq: soma,
+            left: esq,
+            right: dir,
+        });
+
+        fila_pais.push_back(pai);
+    }
+
+    if !fila_pais.is_empty() {
+        fila_pais.pop_front()
+    } else {
+        fila_folhas.pop_front()
+    }
+}
 
 fn leitura_arquivo_normal(nome_arquivo: &str) -> Result<String,io::Error>{
+    println!("criando arvore");
     let mut conteudo: String = String::new();
     let mut arquivo = File::open(nome_arquivo)?;
     arquivo.read_to_string(&mut conteudo)?;
@@ -37,11 +97,12 @@ fn leitura_arquivo_normal(nome_arquivo: &str) -> Result<String,io::Error>{
 }
 
 
+
 fn frequencia(string_arquivo: &str) -> Result<HashMap<char, u32>, String>{
     let mut mapa_frequencia: HashMap<char,u32> = HashMap::new();
-    
+
     if string_arquivo.is_empty() {
-        return Err(String::from("A string está vazia!"));
+        return Err(String::from("A string está azia!"));
     }
 
     for c in string_arquivo.chars(){
@@ -71,6 +132,17 @@ fn compactar(nome_arquivo: &str){
     };
 
 
+    let frequencia = match frequencia(&string_arquivo){
+           Ok(contents) => {contents}
+        Err(e) => {
+            eprintln!("Erro na funcao frequencia: {}", e);
+            HashMap::new()
+        }
+    };
+
+    let arvore = criar_arvore(&frequencia);
+
+
 }
 
 
@@ -91,10 +163,6 @@ fn main() {
         panic!("Argumento desconhecido") // TODO: Melhorar mensagem com usage
     }
 
-    
-    println!("Args = {:?} ", args);
-    
-    println!("Conteudo arquivo = {:?}", conteudo_arquivo)
 
 
 }
