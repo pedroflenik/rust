@@ -20,6 +20,8 @@ use std::collections::HashMap;
 use std::hash::Hash;
 use std::io::{self, Read};
 use std::collections::VecDeque;
+use std::ptr::hash;
+use std::string;
 enum Huffman {
     Leaf {c:char, freq:u32},
     Node {freq:u32,
@@ -50,6 +52,58 @@ fn pegar_proximo_menor(fila_folhas: &mut VecDeque<Box<Huffman>>,fila_pais: &mut 
         (None, None) => panic!("erro"),
     }
 }
+
+fn get_string_from_arvore(arvore: Option<Box<Huffman>>) -> String{
+    
+    let s = String::new();
+
+    while arvore.is_some(){
+        match arvore{
+            
+        }
+    }
+    s
+}
+
+fn criar_tabela_char_cod(arvore: Option<Box<Huffman>>)-> HashMap<char,String>{
+    let mut hash_map: HashMap<char,String> = HashMap::new();
+
+
+    if let Some(no) = arvore{
+        match *no{
+            Huffman::Leaf { c, freq } => {
+
+            }
+            Huffman::Node { freq, left, right } =>{
+
+            }
+        }
+    }
+    
+
+
+    hash_map
+}
+
+fn criar_tabela_cod_char(arvore: Option<Box<Huffman>>) -> HashMap<String, char>{
+  let mut hash_map: HashMap<String, char> = HashMap::new();
+
+
+
+
+
+
+    hash_map
+}
+
+fn percorrer_arvore_string(){
+    let a =0;
+}
+
+fn percorrer_arvore_folha(){
+    let a =0;
+}
+
 
 fn criar_arvore(frequencia: &HashMap<char, u32>) -> Option<Box<Huffman>> {
     if frequencia.is_empty() {
