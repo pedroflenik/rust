@@ -17,11 +17,9 @@ Funções necessárias
 use std::env::{self, args};
 use std::fs::{self, File};
 use std::collections::HashMap;
-use std::hash::Hash;
-use std::io::{self, Read};
+use std::io::ErrorKind::NotConnected;
+use std::io::{self, Read, Write};
 use std::collections::VecDeque;
-use std::ptr::hash;
-use std::string;
 enum Huffman {
     Leaf {c:char, freq:u32},
     Node {freq:u32,
@@ -53,34 +51,105 @@ fn pegar_proximo_menor(fila_folhas: &mut VecDeque<Box<Huffman>>,fila_pais: &mut 
     }
 }
 
-fn get_string_from_arvore(arvore: Option<Box<Huffman>>) -> String{
+fn escrever_arquivo_compactado(frequencia:HashMap<char, u32>, string_arquivo: String, hash_codigos: HashMap<char,String>)
+-> std::io::Result<()>{
+    let mut novo_arquivo = File::create("saida.bits")?;
+    let numero_simbolos = frequencia.keys().len() as u16;
+    let mut total_chars: u32 = 0;
     
-    let s = String::new();
+    for (key, value) in &frequencia{
+        total_chars = total_chars + value;
+    }
 
-    while arvore.is_some(){
-        match arvore{
-            
+    let  mut bits_str = String::new();
+    for c in string_arquivo.chars(){
+        if let Some(codigo) = hash_codigos.get(&c){
+            bits_str.push_str(codigo);
         }
     }
-    s
+
+    novo_arquivo.write_all(&numero_simbolos.to_le_bytes())?;
+    novo_arquivo.write_all(&total_chars.to_le_bytes())?;
+
+    for (&c, &freq) in &frequencia {
+
+        let c_u32 = c as u32;
+
+        novo_arquivo.write_all(&c_u32.to_le_bytes())?;
+        
+        novo_arquivo.write_all(&freq.to_le_bytes())?;
+    }
+
+    let mut vetor_u8: Vec<u8> = Vec::new();
+    let mut atual: u8 = 0;
+    let mut cont: usize = 0;
+
+
+    for bit in bits_str.chars(){
+
+        atual <<= 1;
+        if bit == '1'{
+            atual |= 1;
+        }
+
+        cont +=1;
+
+        if cont ==8{
+            vetor_u8.push(atual);
+            atual = 0;
+            cont = 0;
+        }
+
+    }
+
+    let resto = 8 - cont;
+    if resto > 0{
+        atual <<= resto;
+        vetor_u8.push(atual);
+    }
+
+    novo_arquivo.write_all(&vetor_u8)?;
+    Ok(())
 }
 
 fn criar_tabela_char_cod(arvore: Option<Box<Huffman>>)-> HashMap<char,String>{
     let mut hash_map: HashMap<char,String> = HashMap::new();
+    let mut pilha_endereco: Vec<(&Huffman, String)> = Vec::new();
+
+    let Some(raiz) = arvore else {
+        panic!("Árvore vazia!");
+    };
 
 
-    if let Some(no) = arvore{
-        match *no{
+    pilha_endereco.push((&raiz, String::new()));
+
+    while let Some((no, codigo)) = pilha_endereco.pop() {
+        match  no {
             Huffman::Leaf { c, freq } => {
-
+                // Escrever string
+                // salvar no hash map
+                let codigo_final;
+                if codigo.is_empty(){
+                    codigo_final = String::from('0')
+                }else{
+                    codigo_final = codigo;
+                }
+                hash_map.insert(*c, codigo_final);
             }
-            Huffman::Node { freq, left, right } =>{
+            Huffman::Node { freq, left, right } => {
+                // Guardar endereço
+                //push '0' ou '1'
+                let mut codigo_dir = codigo.clone();
+                codigo_dir.push('1');
+                pilha_endereco.push((right, codigo_dir));
 
+                let mut codigo_esq = codigo;
+                codigo_esq.push('0');
+                pilha_endereco.push((left, codigo_esq));
+                
             }
         }
     }
-    
-
 
     hash_map
 }
@@ -88,10 +157,42 @@ fn criar_tabela_char_cod(arvore: Option<Box<Huffman>>)-> HashMap<char,String>{
 fn criar_tabela_cod_char(arvore: Option<Box<Huffman>>) -> HashMap<String, char>{
   let mut hash_map: HashMap<String, char> = HashMap::new();
 
+    let mut pilha_endereco: Vec<(&Huffman, String)> = Vec::new();
+    let mut pilha_chars: Vec<char> = Vec::new();
 
+    let Some(raiz) = arvore else {
+        panic!("Árvore vazia!");
+    };
 
+    pilha_endereco.push((&raiz, String::new()));
 
+    while let Some((no, codigo)) = pilha_endereco.pop() {
+        match  no {
+            Huffman::Leaf { c, freq } => {
+                // Escrever string
+                // salvar no hash map
+                let mut codigo_final = String::new();
+                if codigo.is_empty(){
+                    codigo_final = String::from('0')
+                }else{
+                    codigo_final = codigo;
+                }
+                hash_map.insert(codigo_final, *c);
+            }
+            Huffman::Node { freq, left, right } => {
+                // Guardar endereço
+                //push '0' ou '1'
+                let mut codigo_dir = codigo.clone();
+                codigo_dir.push('1');
+                pilha_endereco.push((right, codigo_dir));
 
+                let mut codigo_esq = codigo;
+                codigo_esq.push('0');
+                pilha_endereco.push((left, codigo_esq));
+                
+            }
+        }
+    }
 
     hash_map
 }
@@ -170,7 +271,6 @@ fn frequencia(string_arquivo: &str) -> Result<HashMap<char, u32>, String>{
         }
     }
 
-
     Ok(mapa_frequencia)
 }
 
@@ -195,13 +295,13 @@ fn compactar(nome_arquivo: &str){
     };
 
     let arvore = criar_arvore(&frequencia);
-
-
+    let hash_map_codigos = criar_tabela_char_cod(arvore);
+    let _ = escrever_arquivo_compactado(frequencia, string_arquivo, hash_map_codigos);
 }
 
 
 fn main() {
-
+    // Passar o arquivo temp/arquivo ou /temp/arquivo * cargo run -- [opcao] [arquivo]
     let args: Vec<String> =  env::args().collect();
     
 
