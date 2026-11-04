@@ -197,14 +197,6 @@ fn criar_tabela_cod_char(arvore: Option<Box<Huffman>>) -> HashMap<String, char>{
     hash_map
 }
 
-fn percorrer_arvore_string(){
-    let a =0;
-}
-
-fn percorrer_arvore_folha(){
-    let a =0;
-}
-
 
 fn criar_arvore(frequencia: &HashMap<char, u32>) -> Option<Box<Huffman>> {
     if frequencia.is_empty() {
@@ -216,7 +208,18 @@ fn criar_arvore(frequencia: &HashMap<char, u32>) -> Option<Box<Huffman>> {
         .map(|(&c, &freq)| Box::new(Huffman::Leaf { c, freq }))
         .collect();
 
-    folhas.sort_by(|a, b| a.freq().cmp(&b.freq()));
+    folhas.sort_by(|a, b| {
+        match (a.as_ref(), b.as_ref()) {
+            (Huffman::Leaf { c: c1, freq: f1 }, Huffman::Leaf { c: c2, freq: f2 }) => {
+            if f1 == f2 {
+                ((*c1) as u32).cmp(&((*c2) as u32))
+            }else{
+                f1.cmp(f2)
+            }
+            }
+            _ => a.freq().cmp(&b.freq()),
+        }
+    });
 
     let mut fila_folhas = VecDeque::from(folhas);
     let mut fila_pais: VecDeque<Box<Huffman>> = VecDeque::new();
@@ -299,24 +302,111 @@ fn compactar(nome_arquivo: &str){
     let _ = escrever_arquivo_compactado(frequencia, string_arquivo, hash_map_codigos);
 }
 
+fn leitura_arquivo_compactado(nome_arquivo: &str) -> Result<(u32, HashMap<char, u32>, Vec<u8>), io::Error> {
+    let mut arquivo = File::open(nome_arquivo)?;
+
+    let mut buf_n = [0u8; 2];
+    arquivo.read_exact(&mut buf_n)?;
+    let n = u16::from_le_bytes(buf_n) as u32;
+
+    let mut buf_t = [0u8; 4];
+    arquivo.read_exact(&mut buf_t)?;
+    let t = u32::from_le_bytes(buf_t);
+
+    let mut mapa_frequencia = HashMap::new();
+
+    for _ in 0..n {
+        let mut buf_char = [0u8; 4];
+        arquivo.read_exact(&mut buf_char)?;
+        let codigo_u32 = u32::from_le_bytes(buf_char);
+        let c = char::from_u32(codigo_u32).unwrap_or('?');
+
+        let mut buf_freq = [0u8; 4];
+        arquivo.read_exact(&mut buf_freq)?;
+        let freq = u32::from_le_bytes(buf_freq);
+
+        mapa_frequencia.insert(c, freq);
+    }
+
+    let mut bytes_bits = Vec::new();
+    arquivo.read_to_end(&mut bytes_bits)?;
+
+    Ok((t, mapa_frequencia, bytes_bits))
+}
+
+fn descompactar(nome_arquivo: &str){
+    println!("Descompactando arquivo: {}", nome_arquivo);
+    let (t, frequencia, bytes_bits) = match leitura_arquivo_compactado(nome_arquivo) {
+        Ok(dados) => dados,
+        Err(e) => {
+            panic!("Erro ao ler arquivo compactado: {}", e);
+        }
+    };
+
+    let arvore = criar_arvore(&frequencia);
+
+    
+    let tabela_cod_char = criar_tabela_cod_char(arvore);
+
+    let texto = decodificar_com_tabela(&tabela_cod_char, &bytes_bits, t);
+
+    let arquivo_saida = "arquivo_descompactado.txt";
+    if let Err(e) = fs::write(arquivo_saida, texto) {
+        eprintln!("Erro ao salvar arquivo descompactado: {}", e);
+    } else {
+        println!("Arquivo descompactado com sucesso em: {}", arquivo_saida);
+    }
+}
+
+
+fn decodificar_com_tabela(tabela: &HashMap<String, char>, bytes_bits: &[u8], t: u32) -> String {
+    let mut resultado = String::new();
+    let mut codigo_atual = String::new();
+    let mut caracteres_lidos = 0;
+
+    'fora: for &byte in bytes_bits {
+
+        for i in (0..8).rev() {
+            if caracteres_lidos >= t {
+                break 'fora; 
+            }
+
+            let bit = (byte >> i) & 1;
+
+            if bit == 0 {
+                codigo_atual.push('0');
+            } else {
+                codigo_atual.push('1');
+            }
+
+            if let Some(&c) = tabela.get(&codigo_atual) {
+                resultado.push(c);
+                codigo_atual.clear(); 
+                caracteres_lidos += 1;
+            }
+        }
+    }
+
+    resultado
+}
+
 
 fn main() {
     // Passar o arquivo temp/arquivo ou /temp/arquivo * cargo run -- [opcao] [arquivo]
     let args: Vec<String> =  env::args().collect();
-    
+
 
     if args.len() > 3 {
-        panic!("Argumento desconhecido"); 
+        panic!("Argumento desconhecido. Uso [opcao] [arquivo]"); 
     }
+
     let conteudo_arquivo = fs::read_to_string(&args[2]);
     if args[1] == "-c"{
         compactar(&args[2]);   
     }else if args[1] == "-d"{
-        println!("Descompactar: arquivo: {}", args[2]);    
+        descompactar(&args[2]);    
     }else{
         panic!("Argumento desconhecido") // TODO: Melhorar mensagem com usage
     }
-
-
 
 }
