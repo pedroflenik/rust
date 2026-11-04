@@ -14,10 +14,9 @@ Funções necessárias
 - Função para criar a árvore de huffman
 
 */
-use std::env::{self, args};
+use std::env::{self};
 use std::fs::{self, File};
 use std::collections::HashMap;
-use std::io::ErrorKind::NotConnected;
 use std::io::{self, Read, Write};
 use std::collections::VecDeque;
 enum Huffman {
@@ -203,10 +202,9 @@ fn criar_arvore(frequencia: &HashMap<char, u32>) -> Option<Box<Huffman>> {
         panic!("Erro frequencia vazio");
     }
 
-    let mut folhas: Vec<Box<Huffman>> = frequencia
-        .iter()
-        .map(|(&c, &freq)| Box::new(Huffman::Leaf { c, freq }))
-        .collect();
+    let mut folhas: Vec<Box<Huffman>> = frequencia.iter()
+.map(|(&c, &freq)| Box::new(Huffman::Leaf { c, freq }))
+.collect();
 
     folhas.sort_by(|a, b| {
         match (a.as_ref(), b.as_ref()) {
@@ -347,9 +345,9 @@ fn descompactar(nome_arquivo: &str){
 
     
     let tabela_cod_char = criar_tabela_cod_char(arvore);
-
     let texto = decodificar_com_tabela(&tabela_cod_char, &bytes_bits, t);
-
+    
+    //let texto = decodificar_arvore(arvore, &bytes_bits,t);
     let arquivo_saida = "arquivo_descompactado.txt";
     if let Err(e) = fs::write(arquivo_saida, texto) {
         eprintln!("Erro ao salvar arquivo descompactado: {}", e);
@@ -390,17 +388,65 @@ fn decodificar_com_tabela(tabela: &HashMap<String, char>, bytes_bits: &[u8], t: 
     resultado
 }
 
+// fn decodificar_arvore(arvore: Option<Box<Huffman>>,  bytes_bits: &[u8], t:u32) -> String{
+//     let mut resultado = String::new();
+//     let mut caracteres_lidos: u32 = 0;
+//     let raiz = match arvore {
+//         Some(r) => r,
+//         None => panic!("Árvore vazia!"),
+//     };
 
+//     let mut atual = raiz.as_ref();
+
+//     'fora: for &byte in bytes_bits{
+
+//             for i in (0..8).rev() {
+//                 if caracteres_lidos >= t {
+//                     break 'fora; 
+//                 }
+//             let bit = (byte >> i) & 1;
+
+//             if let Huffman::Leaf { c, .. } = atual {
+//                 resultado.push(*c);
+//                 caracteres_lidos += 1;
+//                 atual = raiz.as_ref();
+//             }
+
+//             match atual{
+//                Huffman::Leaf { .. } => {}
+//                 Huffman::Node { freq, left, right } =>
+//                 {
+//                     if bit == 0{
+//                         atual = left.as_ref();
+//                     }else{
+//                         atual = right.as_ref();
+//                     }
+//                 }
+//             }
+
+//             if let Huffman::Leaf { c, .. } = atual {
+//                 resultado.push(*c);
+//                 caracteres_lidos += 1;
+//                 atual = raiz.as_ref();
+//             }
+//         }
+//     }
+//     resultado
+// }
 fn main() {
     // Passar o arquivo temp/arquivo ou /temp/arquivo * cargo run -- [opcao] [arquivo]
     let args: Vec<String> =  env::args().collect();
 
-
     if args.len() > 3 {
         panic!("Argumento desconhecido. Uso [opcao] [arquivo]"); 
     }
+    
 
-    let conteudo_arquivo = fs::read_to_string(&args[2]);
+    if args.len() < 3{
+        panic!("Argumentos insuficientes. Uso [opcao] [arquivo]");
+    }
+
+    //let conteudo_arquivo = fs::read_to_string(&args[2]);
     if args[1] == "-c"{
         compactar(&args[2]);   
     }else if args[1] == "-d"{
