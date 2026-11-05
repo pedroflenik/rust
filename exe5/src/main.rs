@@ -13,6 +13,31 @@ Olhar a biblioteca bitvec.
 
  */
 
+fn calcular_primos(n:usize) -> Vec<bool>{
+    let mut v: Vec<bool> = vec![true; n];
+    v[0] = false;
+    v[1] = false;
+    for i in 2..n{
+        if v[i] == true{
+            
+            for j in ((i*i)..n).step_by(i){
+                    v[j] = false;
+            }
+        }
+    }
+
+    v
+}
+
+
+
 fn main() {
-    println!("Hello, world!");
+    let n = 2294967295;
+    let k = calcular_primos(n);
+
+    for i in 0..k.len(){
+        if k[i] == true{
+            print!("{} ",i);
+        }
+    }
 }
