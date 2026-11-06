@@ -13,31 +13,47 @@ Olhar a biblioteca bitvec.
 
  */
 
-fn calcular_primos(n:usize) -> Vec<bool>{
-    let mut v: Vec<bool> = vec![true; n];
-    v[0] = false;
-    v[1] = false;
-    for i in 2..n{
+
+
+use bitvec::prelude::*;
+
+fn calcular_primos_serial(v:&mut BitSlice,  n:usize){
+    v.set(0, false);
+    v.set(1, false);
+
+    let limite = (n as f64).sqrt() as usize;
+
+    for i in 2..limite{
         if v[i] == true{
-            
             for j in ((i*i)..n).step_by(i){
-                    v[j] = false;
+                v.set(j, false);
             }
         }
     }
-
-    v
 }
 
 
 
 fn main() {
-    let n = 2294967295;
-    let k = calcular_primos(n);
+    // let n = 4294967295
+    // let n = 2294967295;
+    
+    const N:usize = 100;
+    let mut bits = bitvec![1; N];
 
-    for i in 0..k.len(){
-        if k[i] == true{
+    calcular_primos_serial(&mut bits, N);
+
+    for i in 0..bits.len(){
+        if bits[i] == true{
             print!("{} ",i);
         }
     }
+
+
+    // let bits: BitArr!(for 100, in u8) = BitArray::ZERO;
+
+    // for b in bits{
+    //     print!("B = {}", b);
+    // }
+
 }
