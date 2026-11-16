@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 
 
 # 0 para grafico médio | 1 para grafico ganho
-tipoGrafico = 1
+tipoGrafico = 0
 
 if tipoGrafico == 0:
 
@@ -14,15 +14,15 @@ if tipoGrafico == 0:
     plt.figure(figsize=(9, 5))
     plt.plot(avg_df['threads'], avg_df['real_seconds'], marker='o', linestyle='-', color='b', linewidth=2)
 
-    plt.title('Atividade Mandelbrot tempo médio')
+    plt.title('Atividade Crivo tempo médio')
     plt.xlabel('Número de Threads')
     plt.ylabel('Tempo médio')
     plt.grid(True, linestyle='--', alpha=0.6)
     plt.xticks(avg_df['threads'])
     plt.tight_layout()
 
-    plt.savefig('mandel_medio.png', dpi=300)
-    print("Grafico salvo em mandel_medio.png")
+    plt.savefig('crivo_medio.png', dpi=300)
+    print("Grafico salvo em crivo_medio.png")
 
 else:
     df = pd.read_csv('stored_time.txt')
