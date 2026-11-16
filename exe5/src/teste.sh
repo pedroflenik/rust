@@ -3,7 +3,9 @@
 OUTPUT_FILE="stored_time.txt"
 echo "threads,run,real_seconds" > "$OUTPUT_FILE"
 
-for t in $(seq 1 12); do
+MAX_THREADS=$(nproc)
+
+for t in $(seq 1 $MAX_THREADS); do
     echo "Running tests for $t threads..."
     
     for ((run=1; run<=10; run++)); do
