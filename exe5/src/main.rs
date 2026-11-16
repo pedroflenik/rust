@@ -13,39 +13,58 @@ Olhar a biblioteca bitvec.
 
 Como paralelizar
 1 - Resolver loop externo de forma serial
-2 - Dividor restante entre threads de forma igualitaria
+2 - Dividor restante entre threads de forma igualitaria e estatica
 3 - Juntar respostas
-
-
 
 */
 
 
-
+use std::env;
 use bitvec::prelude::*;
+use core::num;
 use std::thread;
+use bitvec::access::BitSafeUsize;
 
-fn calcular_primos(v: &mut BitSlice, inicio: usize, fim:usize, primos_base: &mut BitSlice){
-    let mut ultimo_verificado: usize = 0;
+fn calcular_primos_thread<T: BitStore>(inicio: usize,v: &mut BitSlice<T, Lsb0>,primos_base: &BitSlice,
+){
+    let fim = inicio + v.len();
 
-    for (i, b) in primos_base.iter().enumerate(){
-        if *b{
-            for j in ((i * i)..fim).step_by(i) {
-                v.set(inicio + j, false);
+    for (i, b) in primos_base.iter().enumerate() {
+        if i < 2 {
+            continue;
+        }
+
+        if *b {
+            let quadrado = i * i;
+            if quadrado >= fim {
+                break; 
+            }
+
+            let pm: usize = inicio.div_ceil(i) * i;
+            let comeco_li = pm.max(quadrado);
+
+            for j in (comeco_li..fim).step_by(i) {
+                v.set(j - inicio, false);
             }
         }
     }
 }
 
-fn calcular_primos_serial(v:&mut BitSlice,  n:usize, limite: usize){
-    v.set(0, false);
-    v.set(1, false);
-
+fn calcular_primos_serial(v: &mut BitSlice) {
+    let tamanho = v.len();
     
+    if tamanho > 0 {
+         v.set(0, false); 
+    }
+    if tamanho > 1 { 
+        v.set(1, false); 
+    }
 
-    for i in 2..limite{
-        if v[i] == true{
-            for j in ((i*i)..n).step_by(i){
+    let limite = (tamanho as f64).sqrt() as usize;
+
+    for i in 2..=limite {
+        if v[i]==true {
+            for j in ((i * i)..tamanho).step_by(i) {
                 v.set(j, false);
             }
         }
@@ -55,33 +74,51 @@ fn calcular_primos_serial(v:&mut BitSlice,  n:usize, limite: usize){
 
 
 fn main() {
-    // let n = 4294967295
-    // let n = 2294967295;
+    const N: usize = 4_294_967_295;
+    let args: Vec<String> = env::args().collect();
 
-    const N:usize = 4294967295;
+    let mut num_threads: usize = args.get(1).expect("faltou informar o número de threads").parse().expect("O n de threads deve ser um inteiro positivo");
 
     let limite = (N as f64).sqrt() as usize;
-    let mut bits = bitvec![1; N];
 
     let mut numeros_base = bitvec![1; limite];
+    calcular_primos_serial(&mut numeros_base);
 
-    let limite_primeiro_calculo = (limite as f64).sqrt() as usize;
-    calcular_primos_serial(&mut b, limite_primeiro_calculo, limite);
+    let mut bits = bitvec![1; N];
+    bits.set(0, false);
+    bits.set(1, false);
+
+    let max_threads = thread::available_parallelism().map(|n| n.get()).unwrap_or(12);
 
 
-    for i in 0..bits.len(){
-        if bits[i] == true{
-            print!("{} ",i);
-        }
+    if num_threads > max_threads{
+        num_threads = max_threads;
     }
 
+    let parcela = N/ num_threads;
+    let resto = N % num_threads;
+    
+    let primos_base = &numeros_base[..];
+    thread::scope(|s| {
+        let (_, mut resto_bits): (&mut BitSlice<BitSafeUsize>, &mut BitSlice<BitSafeUsize>) =bits.split_at_mut(0);
+        let mut inicio = 0;
 
+        for id in 0..num_threads {
+            let tam: usize = parcela + if id < resto {
+                1 
+            } else { 
+                0 
+            };
+            let (chunk, prox) = resto_bits.split_at_mut(tam);
+            resto_bits = prox;
 
-    // printar bits
-    // let bits: BitArr!(for 100, in u8) = BitArray::ZERO;
+            s.spawn(move || {
+                calcular_primos_thread(inicio, chunk, primos_base);
+            });
 
-    // for b in bits{
-    //     print!("B = {}", b);
-    // }
+            inicio += tam;
+        }
+    });
 
+    println!("acabou primos ate {}: {}", N, bits.count_ones());
 }
